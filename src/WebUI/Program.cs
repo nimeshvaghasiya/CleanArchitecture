@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace CleanArchitecture.WebUI
 {
-    public class Program
+    public static class Program
     {
         public async static Task Main(string[] args)
         {
@@ -24,17 +24,24 @@ namespace CleanArchitecture.WebUI
                 try
                 {
                     var context = services.GetRequiredService<ApplicationDbContext>();
-                    context.Database.Migrate();
+
+                    if (context.Database.IsSqlServer())
+                    {
+                        context.Database.Migrate();
+                    }                   
 
                     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-                    await ApplicationDbContextSeed.SeedAsync(userManager);
+                    await ApplicationDbContextSeed.SeedDefaultUserAsync(userManager);
+                    await ApplicationDbContextSeed.SeedSampleDataAsync(context);
                 }
                 catch (Exception ex)
                 {
-                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+                    var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
 
                     logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+
+                    throw;
                 }
             }
 
